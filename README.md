@@ -1,4 +1,4 @@
-# XSolla ZK
+# 0xBarter
 
 ## Overview
 
@@ -16,6 +16,7 @@
 ### Solidity
 
 - `cd smart-contract`
+- set private key in `.env` file
 - compile `npm run compile`
 - deploy to xSolla testnet `npx hardhat run scripts/deploy-fakenftcollection.ts --network xSollaZKSepolia `
 
@@ -24,3 +25,12 @@
 - `cd dapp`
 - `pnpm i`
 - `pnpm run dev`
+
+### Backend
+
+- `cd backend`
+- `pnpm i`
+- `touch .env` then fill out env vars
+
+- Mint NFTs from testing collection to your testing accounts `node mintTestNFTs.js`
+-

@@ -19,7 +19,7 @@ Platform for trading gaming collectibles & e-commerce NFTs. Current features inc
 
 **Paseo Polkadot Testnet**
 
-- **NFTBarteringPlatform:** ``
+- **NFTBarteringPlatform:** `0xC96c6B77eF70Bec6ae3d653596A4e9BC3E1d434a`
 - **FakeNFTCollection:** ``
 
 **Neon EVM**

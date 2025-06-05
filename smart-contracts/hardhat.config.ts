@@ -73,6 +73,13 @@ const config: HardhatUserConfig = {
         ? [process.env.WALLET_PRIVATE_KEY]
         : [],
     },
+    Paset: {
+      url: "https://testnet-passet-hub-eth-rpc.polkadot.io",
+      zksync: false,
+      accounts: process.env.WALLET_PRIVATE_KEY
+        ? [process.env.WALLET_PRIVATE_KEY]
+        : [],
+    },
     hardhat: {
       zksync: true,
     },

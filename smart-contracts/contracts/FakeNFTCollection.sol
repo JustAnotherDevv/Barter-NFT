@@ -1,54 +1,55 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract FakeNFTCollection {
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-    uint256 public totalSupply;
-    address public owner;
+contract FakeNFTCollection is ERC721, Ownable {
+    uint256 private _tokenIdCounter;
     string private _baseTokenURI;
 
-    mapping(uint256 => address) public ownerOf;
-    mapping(address => uint256[]) public tokensOf;
-
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
     event BaseURIUpdated(string newBaseURI);
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
-        _;
-    }
-
-    constructor() {
-        owner = msg.sender;
-    }
+    constructor() ERC721("FakeNFTCollection", "FAKE") Ownable(msg.sender) {}
 
     function mint(address to, uint256 quantity) public {
         require(to != address(0), "Cannot mint to zero address");
+        require(quantity > 0, "Quantity must be greater than 0");
+        require(quantity <= 100, "Cannot mint more than 100 at once");
+        
         for (uint256 i = 0; i < quantity; i++) {
-            uint256 tokenId = totalSupply;
-            ownerOf[tokenId] = to;
-            tokensOf[to].push(tokenId);
-            totalSupply++;
-            emit Transfer(address(0), to, tokenId);
+            uint256 tokenId = _tokenIdCounter;
+            _tokenIdCounter++;
+            _safeMint(to, tokenId);
         }
     }
 
     function getTotalSupply() public view returns (uint256) {
-        return totalSupply;
+        return _tokenIdCounter;
     }
 
-    function balanceOf(address tokenOwner) public view returns (uint256) {
-        require(tokenOwner != address(0), "Cannot query balance of zero address");
-        return tokensOf[tokenOwner].length;
+    function getTokensOf(address owner) public view returns (uint256[] memory) {
+        require(owner != address(0), "Cannot query tokens of zero address");
+        
+        uint256 balance = balanceOf(owner);
+        uint256[] memory tokens = new uint256[](balance);
+        uint256 index = 0;
+        
+        for (uint256 tokenId = 0; tokenId < _tokenIdCounter; tokenId++) {
+            if (_ownerOf(tokenId) == owner) {
+                tokens[index] = tokenId;
+                index++;
+                if (index == balance) break;
+            }
+        }
+        
+        return tokens;
     }
 
-    function getTokensOf(address tokenOwner) public view returns (uint256[] memory) {
-        return tokensOf[tokenOwner];
-    }
-
-    function tokenOfOwnerByIndex(address tokenOwner, uint256 index) public view returns (uint256) {
-        require(index < tokensOf[tokenOwner].length, "Index out of bounds");
-        return tokensOf[tokenOwner][index];
+    function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
+        uint256[] memory tokens = getTokensOf(owner);
+        require(index < tokens.length, "Index out of bounds");
+        return tokens[index];
     }
 
     function setBaseURI(string memory baseURI) public onlyOwner {
@@ -56,46 +57,31 @@ contract FakeNFTCollection {
         emit BaseURIUpdated(baseURI);
     }
 
-    function baseURI() public view returns (string memory) {
+    function _baseURI() internal view override returns (string memory) {
         return _baseTokenURI;
     }
 
-    function tokenURI(uint256 tokenId) public view returns (string memory) {
-        require(ownerOf[tokenId] != address(0), "Token does not exist");
+    function burn(uint256 tokenId) public {
+        address owner = ownerOf(tokenId);
+        require(
+            msg.sender == owner || 
+            getApproved(tokenId) == msg.sender || 
+            isApprovedForAll(owner, msg.sender),
+            "Caller is not owner nor approved"
+        );
         
-        string memory baseUri = _baseTokenURI;
-        if (bytes(baseUri).length == 0) {
-            return "";
-        }
-        
-        return string(abi.encodePacked(baseUri, toString(tokenId), ".json"));
+        _burn(tokenId);
     }
 
-    function toString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) {
-            return "0";
+    function batchMintTo(address[] memory recipients, uint256[] memory quantities) public onlyOwner {
+        require(recipients.length == quantities.length, "Arrays length mismatch");
+        
+        for (uint256 i = 0; i < recipients.length; i++) {
+            mint(recipients[i], quantities[i]);
         }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
-    }
-
-    function transferOwnership(address newOwner) public onlyOwner {
-        require(newOwner != address(0), "New owner cannot be zero address");
-        owner = newOwner;
     }
 
     function exists(uint256 tokenId) public view returns (bool) {
-        return ownerOf[tokenId] != address(0);
+        return tokenId < _tokenIdCounter && _ownerOf(tokenId) != address(0);
     }
 }
